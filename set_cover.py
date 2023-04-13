@@ -3,36 +3,36 @@ def converterStringParaInt(listaStr):
     # Faço uma primeira iteração atribuída a cada restrição do problema:
     restricoes = []
     for i in range(len(listaStr)):
-        s = []
+        listaAux = []
         elemento = listaStr[i]
         # Faço essa iteração envolvendo cada valor de cada restrição gerada, como estava dando erro usando apenas a transformação para int, decidi fazer com 'float' para 'int':
         for j in range(len(elemento)):
-            s.append(int(elemento[j]))      
-        restricoes.append(s)
+            listaAux.append(int(elemento[j]))      
+        restricoes.append(listaAux)
     # Como a função gerador acaba gerando uma linha em branco no final de todas as restrições, deletei ela com essa linha:
     restricoes.pop()
     return restricoes
 
 
 # Converte as restrições que antes estava em 0 e 1, para apenas os valores das posições do 1, para conseguirmos trabalhar na 2ª regra:
-def converterBinParaIntDosConjuntos(lista):
-    l = []
-    elementos = len(lista[0])
+def converterBinParaIntDosConjuntos(listaBin):
+    listaConjuntos = []
+    tamanhoDasRestricoes = len(listaBin[0])
     #print(elementos)
     # Caso ele tenha apenas uma restrição em objetos, ele roda apenas uma vez e tira os valores dos conjuntos que contém em cada restrição:
-    if len(lista) == 1:
-        for i in range(elementos):
-            if lista[0][i] == 1:
-                l.append(i)
+    if len(listaBin) == 1:
+        for i in range(tamanhoDasRestricoes):
+            if listaBin[0][i] == 1:
+                listaConjuntos.append(i)
     else:
-        for j in range(len(lista)):
-            k = []
-            for i in range(elementos):
-                if lista[j][i] == 1:
-                    k.append(i)
-            l.append(k)
+        for j in range(len(listaBin)):
+            listaAux = []
+            for i in range(tamanhoDasRestricoes):
+                if listaBin[j][i] == 1:
+                    listaAux.append(i)
+            listaConjuntos.append(listaAux)
     
-    return l
+    return listaConjuntos
 
 
 # Função que faz a primeira regra pedida do problema:
@@ -54,27 +54,26 @@ def regra1(restricao):
 
 def regra2(conjuntos, restricao):
     #print(lista)
-    l = []
-    lista_Aux = []
+    listaAux = []
     
     # Por convenção decidi criar um laço duplo para salvar os elementos dos subconjuntos das restrições redundantes do problema em uma lista 'l'
     for m in range(len(conjuntos)):
-        Set1 = set(conjuntos[m])
+        set1 = set(conjuntos[m])
         for n in range(m + 1, len(conjuntos)):
-            Set2 = set(conjuntos[n])
-            if Set1 >= Set2:
-                if m not in l:
-                    l.append(m)
-            elif Set1 < Set2:
+            set2 = set(conjuntos[n])
+            if set1 >= set2:
+                if m not in listaAux:
+                    listaAux.append(m)
+            elif set1 < set2:
                 # Não sei como ficaria esse 'if' caso ouvesse um caso de 3 restrições serem identicas tipo [0,1,1,0,0,0,0] aparecer 3 vezes (?)
-                if n not in l:
-                    l.append(n)
+                if n not in listaAux:
+                    listaAux.append(n)
  
     # Agora farei um laço duplo para pegar os elementos salvos da lista 'l' e compará-los com a 'lista' de entrada que é a lista de conjuntos (Xi) em cada restrição, para deletarmos depois:
     # Por preguiça e falta de ideia, criei uma lista anteriormente 'aux1' para salvar a restrição que é repetido e possui seus idênticos no problema para fazer sua inclusão novamente nos objetos
-    l.sort()
+    listaAux.sort()
     aux = 0
-    for k in l:
+    for k in listaAux:
         del restricao[k - aux]
         aux += 1
     
@@ -89,9 +88,9 @@ def regra2(conjuntos, restricao):
 
 
 def main():
-    path = "/Users/aluno/Downloads/t/set-cover-pre-processing-/entrada.txt"
+    caminho = "/Users/aluno/Downloads/t/set-cover-pre-processing-/entrada.txt"
 
-    fileGen = open(path, 'r')
+    fileGen = open(caminho, 'r')
 
     conjunto = fileGen.read()
     lista = conjunto.split('\n')
@@ -101,39 +100,41 @@ def main():
 
     resultado_Regra1 = []
     # Uma forma de evitar problema com a indexação da lista foi utilizar um auxiliador 'j' que volta a quantidade de elementos que foram retirados da lista!
-    j = 0
+    auxRegra1 = 0
     # Selecionar a 'solução' da primeira regra e deletar a restrição:
     for i in range(len(restricoes)):
-        xx = regra1(restricoes[i - j])
-        
+        xx = regra1(restricoes[i - auxRegra1])
+
         # Há um problema nesse código, caso exista uma restrição [1,0,0,0,0,0,0], ele não consegue adicionar o '0' na lista, pois ele diz que o '0' é nulo (?)
-        if xx == 0:
+        if xx != None:
             print(xx)
-        resultado_Regra1.append(xx)
-        if resultado_Regra1[i]:
+            resultado_Regra1.append(xx)
+
             # Para evitar que acabe selecionando a mesma variável 'Xi' duas vezes no conjunto solução caso exista uma restrição igual:
-            if resultado_Regra1[i] not in solucao:
-                solucao.append(resultado_Regra1[i])
-            print(solucao)
-            del restricoes[i - j]
-            j += 1
+            if resultado_Regra1[-1] not in solucao:
+                solucao.append(resultado_Regra1[-1])
+            del restricoes[i - auxRegra1]
+            auxRegra1 += 1
+    print(solucao)
 
     # Da mesma forma que usei o 'j' para evitar o erro, estamos usando aqui o auxiliador 'k':
-    k = 0
+    aux = 0
     # Aqui iremos excluir as restrições já cobertas pelo conjunto solução, pois sabemos que satisfaz a condição '>= 1' para os conjuntos em 'solucao':
     if solucao is not []:
         for i in range(len(restricoes)):
-            for j in range(len(solucao)):
-                    if restricoes[i - k][solucao[j]]:
-                        del restricoes[i - k]
-                        k += 1
+            for auxRegra1 in range(len(solucao)):
+                    if restricoes[i - aux][solucao[auxRegra1]]:
+                        del restricoes[i - aux]
+                        aux += 1
 
     # Aqui coloquei um segundo argumento de 'restricoes' para eu conseguir deletar as restricoes que possuem conjuntos redundantes, sobrando apenas seus subconjuntos:
-    r = regra2(converterBinParaIntDosConjuntos(restricoes), restricoes)
+    if len(restricoes) != 1:
+        restricoes_nao_redundantes = regra2(converterBinParaIntDosConjuntos(restricoes), restricoes)
+        print(restricoes_nao_redundantes)
 
-    #regra3()
+    #resultados = regra3(restricoes_nao_redundantes)
 
-    print(r)
+    
 
 
 if __name__ == '__main__':
