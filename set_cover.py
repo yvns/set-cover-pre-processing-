@@ -78,17 +78,42 @@ def regra2(conjuntos, restricao):
         aux += 1
     
     return restricao
+    
+    # Para eventuais testes:
     # for i, linha in enumerate(objetos):
     #     print(i, linha)   
 
 
 # para a terceira regra agora é analisar as colunas/subconj redundantes, porém dessa vez devemos escolher o conjunto Si com a maior cobertura entre as restrições:
 # vamos repetir as 3 regras até o conjunto ficar vazio = []
-#def regra3():
+def regra3(restricoesRed):
+    elementosRestricao = len(restricoesRed[0])
+    maiorPrioridade = 0
+    indiceConjunto = 0
+    prioridade = 0
+
+    for j in range(elementosRestricao):
+        if len(restricoesRed) == 1:
+            if restricoesRed[0][j]:
+                indiceConjunto = j
+                return indiceConjunto
+          
+        else:
+            for i in range(len(restricoesRed)):
+                if restricoesRed[i][j]:
+                    prioridade += restricoesRed[i][j]
+            
+            if prioridade > maiorPrioridade:
+                maiorPrioridade = prioridade
+                indiceConjunto = j
+            prioridade = 0
+        
+    return indiceConjunto
+        
 
 
 def main():
-    caminho = "/Users/aluno/Downloads/t/set-cover-pre-processing-/entrada.txt"
+    caminho = "/Users/yvens/Documents/Faculdade/PI/codes/set-cover-pre-processing-/entrada.txt"
 
     fileGen = open(caminho, 'r')
 
@@ -98,7 +123,7 @@ def main():
 
     restricoes = converterStringParaInt(lista)
 
-    resultado_Regra1 = []
+    resultado_regra1 = []
     # Uma forma de evitar problema com a indexação da lista foi utilizar um auxiliador 'j' que volta a quantidade de elementos que foram retirados da lista!
     auxRegra1 = 0
     # Selecionar a 'solução' da primeira regra e deletar a restrição:
@@ -108,14 +133,14 @@ def main():
         # Há um problema nesse código, caso exista uma restrição [1,0,0,0,0,0,0], ele não consegue adicionar o '0' na lista, pois ele diz que o '0' é nulo (?)
         if xx != None:
             print(xx)
-            resultado_Regra1.append(xx)
+            resultado_regra1.append(xx)
 
             # Para evitar que acabe selecionando a mesma variável 'Xi' duas vezes no conjunto solução caso exista uma restrição igual:
-            if resultado_Regra1[-1] not in solucao:
-                solucao.append(resultado_Regra1[-1])
+            if resultado_regra1[-1] not in solucao:
+                solucao.append(resultado_regra1[-1])
             del restricoes[i - auxRegra1]
             auxRegra1 += 1
-    print(solucao)
+    #print(solucao)
 
     # Da mesma forma que usei o 'j' para evitar o erro, estamos usando aqui o auxiliador 'k':
     aux = 0
@@ -130,11 +155,27 @@ def main():
     # Aqui coloquei um segundo argumento de 'restricoes' para eu conseguir deletar as restricoes que possuem conjuntos redundantes, sobrando apenas seus subconjuntos:
     if len(restricoes) != 1:
         restricoes_nao_redundantes = regra2(converterBinParaIntDosConjuntos(restricoes), restricoes)
-        print(restricoes_nao_redundantes)
-
-    #resultados = regra3(restricoes_nao_redundantes)
-
+    else:
+        restricoes_nao_redundantes = restricoes
     
+    solucao_regra3 = 0
+    while 1:
+        solucao_regra3 = regra3(restricoes_nao_redundantes)
+        #print(solucao_regra3)
+        solucao.append(solucao_regra3)
+        #print(solucao)
+        aux = 0
+
+        if len(restricoes_nao_redundantes) == 1:
+            del restricoes_nao_redundantes
+            break
+    
+        for k in range(len(restricoes_nao_redundantes)):
+            if restricoes_nao_redundantes[k - aux][solucao_regra3]:
+                del restricoes_nao_redundantes[k - aux]
+                aux += 1
+
+    print(solucao)
 
 
 if __name__ == '__main__':

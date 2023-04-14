@@ -4,8 +4,8 @@ import random as rd
 N = 10 # Numero de objetos
 M = 7 # Numero de subconjuntos
 
-# Semente para o gerador pseudoaleatorio
-rd.seed(537)
+# Semente para o gerador pseudoaleatorio (default: 682)
+rd.seed(587)
 
 F = []
 while True:
