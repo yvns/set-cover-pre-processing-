@@ -1,7 +1,9 @@
+import numpy as np
 # Função que converte a lista contendo as restrições como 'string' para 'int' que está contida em uma lista de listas de Inteiros:
 def converterStringParaInt(listaStr):
     # Faço uma primeira iteração atribuída a cada restrição do problema:
     restricoes = []
+    
     for i in range(len(listaStr)):
         listaAux = []
         elemento = listaStr[i]
@@ -18,42 +20,55 @@ def converterStringParaInt(listaStr):
 def converterBinParaIntDosConjuntos(listaBin):
     listaConjuntos = []
     tamanhoDasRestricoes = len(listaBin[0])
-    #print(elementos)
+
     # Caso ele tenha apenas uma restrição em objetos, ele roda apenas uma vez e tira os valores dos conjuntos que contém em cada restrição:
     if len(listaBin) == 1:
-        for i in range(tamanhoDasRestricoes):
-            if listaBin[0][i] == 1:
-                listaConjuntos.append(i)
+        for j in range(tamanhoDasRestricoes):
+            if listaBin[0][j] == 1:
+                listaConjuntos.append(j)
     else:
-        for j in range(len(listaBin)):
+        for i in range(len(listaBin)):
             listaAux = []
-            for i in range(tamanhoDasRestricoes):
+            for j in range(tamanhoDasRestricoes):
                 if listaBin[j][i] == 1:
                     listaAux.append(i)
             listaConjuntos.append(listaAux)
     
+    listaConjuntos = np.array(listaConjuntos)
     return listaConjuntos
 
 
 # Função que faz a primeira regra pedida do problema:
-def regra1(restricao):
-    cobertura = 0
-    indice = 0
+def regra1(restricao, solucao, modificacoes, listaSubconjOriginais):
+    aux = 0
+    indicesLinhas = []
 
-    for j in range(len(restricao)):
-        cobertura += restricao[j]
-        if restricao[j]:
-            indice = j
+    for i in range(len(restricao)):
+        cobertura = 0
+        for j in range(len(restricao[0])):
+            cobertura += restricao[i][j]
+            if restricao[i][j]:
+                aux = j
+        if cobertura == 1:
+            indicesLinhas.append(i)
+            solucao.add(aux)
+            modificacoes = True
+
+    indiceSolucao = list(solucao)
+
+    for i in range(len(restricao)):
+        for j in indiceSolucao:
+            if restricao[i][j] and i not in indicesLinhas:
+                indicesLinhas.append(i)
     
-    # Se tiver algum 'Xi' que tenha apenas ele como cobertura daquela restrição, ele deve ser igual a 1 (Xi + n*0 >= 1):
-    if cobertura == 1:
-        return indice
-    else:
-        return None
+    restricaoNova = np.delete(restricao, indicesLinhas, axis=0)
+    listaSubconjOriginaisNovo = np.delete(listaSubconjOriginais, indicesLinhas, axis=0)
+
+    return restricaoNova, solucao, modificacoes, listaSubconjOriginaisNovo
+        
 
 
-def regra2(conjuntos, restricao):
-    #print(lista)
+def regra2(conjuntos, restricao, modificacoes):
     listaAux = []
     
     # Por convenção decidi criar um laço duplo para salvar os elementos dos subconjuntos das restrições redundantes do problema em uma lista 'l'
@@ -68,114 +83,78 @@ def regra2(conjuntos, restricao):
                 # Não sei como ficaria esse 'if' caso ouvesse um caso de 3 restrições serem identicas tipo [0,1,1,0,0,0,0] aparecer 3 vezes (?)
                 if n not in listaAux:
                     listaAux.append(n)
+    
  
     # Agora farei um laço duplo para pegar os elementos salvos da lista 'l' e compará-los com a 'lista' de entrada que é a lista de conjuntos (Xi) em cada restrição, para deletarmos depois:
     # Por preguiça e falta de ideia, criei uma lista anteriormente 'aux1' para salvar a restrição que é repetido e possui seus idênticos no problema para fazer sua inclusão novamente nos objetos
-    listaAux.sort()
-    aux = 0
-    for k in listaAux:
-        del restricao[k - aux]
-        aux += 1
-    
-    return restricao
-    
-    # Para eventuais testes:
-    # for i, linha in enumerate(objetos):
-    #     print(i, linha)   
+    # listaAux.sort()
+    # aux = 0
+    # for k in listaAux:
+    #     del restricao[k - aux]
+    #     aux += 1
+    #     modificacoes = True
+    restricaoModificada = np.delete(restricao, listaAux, axis=0)
+
+    return restricaoModificada, modificacoes
+ 
 
 
-# para a terceira regra agora é analisar as colunas/subconj redundantes, porém dessa vez devemos escolher o conjunto Si com a maior cobertura entre as restrições:
-# vamos repetir as 3 regras até o conjunto ficar vazio = []
-def regra3(restricoesRed):
-    elementosRestricao = len(restricoesRed[0])
-    maiorPrioridade = 0
-    indiceConjunto = 0
-    prioridade = 0
+# def regra3(restricoes, solucao, modificado, listaSubconjRemovidos):
+#     maiorPrioridade, indiceConjunto, prioridade = 0, 0, 0
 
-    for j in range(elementosRestricao):
-        if len(restricoesRed) == 1:
-            if restricoesRed[0][j]:
-                indiceConjunto = j
-                return indiceConjunto
-          
-        else:
-            for i in range(len(restricoesRed)):
-                if restricoesRed[i][j]:
-                    prioridade += restricoesRed[i][j]
-            
-            if prioridade > maiorPrioridade:
-                maiorPrioridade = prioridade
-                indiceConjunto = j
-            prioridade = 0
+#     for j in range(len(restricoes)):
+#         if len(restricoes) == 1:
+#             if restricoes[0][j]:
+#                 indiceConjunto = j
+#                 solucao.add(j)
+#                 return restricoes
         
-    return indiceConjunto
+#         else:
+#             for i in range(len(restricoes)):
+#                 if restricoes[i][j]:
+#                     prioridade += restricoes[i][j]
+            
+#             if prioridade > maiorPrioridade:
+#                 maiorPrioridade = prioridade
+#                 indiceConjunto = j
+#             prioridade = 0
+        
+#     return indiceConjunto
         
 
 
 def main():
-    caminho = "/Users/yvens/Documents/Faculdade/PI/codes/set-cover-pre-processing-/entrada.txt"
-
-    fileGen = open(caminho, 'r')
+    fileGen = open('entrada.txt', 'r')
 
     conjunto = fileGen.read()
     lista = conjunto.split('\n')
-    solucao = []
-
     restricoes = converterStringParaInt(lista)
+    restricoesArray = np.array(restricoes)
 
-    resultado_regra1 = []
-    # Uma forma de evitar problema com a indexação da lista foi utilizar um auxiliador 'j' que volta a quantidade de elementos que foram retirados da lista!
-    auxRegra1 = 0
-    # Selecionar a 'solução' da primeira regra e deletar a restrição:
-    for i in range(len(restricoes)):
-        xx = regra1(restricoes[i - auxRegra1])
+    listaSubconjOriginais = restricoesArray
+    solucao = set()
+    modificacoes = True
 
-        # Há um problema nesse código, caso exista uma restrição [1,0,0,0,0,0,0], ele não consegue adicionar o '0' na lista, pois ele diz que o '0' é nulo (?)
-        if xx != None:
-            print(xx)
-            resultado_regra1.append(xx)
-
-            # Para evitar que acabe selecionando a mesma variável 'Xi' duas vezes no conjunto solução caso exista uma restrição igual:
-            if resultado_regra1[-1] not in solucao:
-                solucao.append(resultado_regra1[-1])
-            del restricoes[i - auxRegra1]
-            auxRegra1 += 1
-    #print(solucao)
-
-    # Da mesma forma que usei o 'j' para evitar o erro, estamos usando aqui o auxiliador 'k':
-    aux = 0
-    # Aqui iremos excluir as restrições já cobertas pelo conjunto solução, pois sabemos que satisfaz a condição '>= 1' para os conjuntos em 'solucao':
-    if solucao is not []:
-        for i in range(len(restricoes)):
-            for auxRegra1 in range(len(solucao)):
-                    if restricoes[i - aux][solucao[auxRegra1]]:
-                        del restricoes[i - aux]
-                        aux += 1
-
-    # Aqui coloquei um segundo argumento de 'restricoes' para eu conseguir deletar as restricoes que possuem conjuntos redundantes, sobrando apenas seus subconjuntos:
-    if len(restricoes) != 1:
-        restricoes_nao_redundantes = regra2(converterBinParaIntDosConjuntos(restricoes), restricoes)
-    else:
-        restricoes_nao_redundantes = restricoes
+    linhas = len(restricoes)
     
-    solucao_regra3 = 0
-    while 1:
-        solucao_regra3 = regra3(restricoes_nao_redundantes)
-        #print(solucao_regra3)
-        solucao.append(solucao_regra3)
-        #print(solucao)
-        aux = 0
+    while modificacoes:
+        modificacoes = False
+        resultado_regra1 = []
+            
+        resultado_regra1 = regra1(restricoes, solucao, modificacoes, listaSubconjOriginais)
+        restricoes, solucao, modificacoes, listaSubconjOriginais = resultado_regra1[0], resultado_regra1[1], resultado_regra1[2], resultado_regra1[3]
 
-        if len(restricoes_nao_redundantes) == 1:
-            del restricoes_nao_redundantes
-            break
-    
-        for k in range(len(restricoes_nao_redundantes)):
-            if restricoes_nao_redundantes[k - aux][solucao_regra3]:
-                del restricoes_nao_redundantes[k - aux]
-                aux += 1
+        # Aqui coloquei um segundo argumento de 'restricoes' para eu conseguir deletar as restricoes que possuem conjuntos redundantes, sobrando apenas seus subconjuntos:
+        if len(restricoes) != 1:
+            resultado_regra2 = regra2(converterBinParaIntDosConjuntos(restricoes), restricoes, modificacoes)
+            restricoes, modificacoes = resultado_regra2[0], resultado_regra2[1]
+            #print(restricoes, modificacoes)
+        
+        modificacoes = False
+        #resultado_regra3 = regra3(restricoes, modificado, colunas)
 
-    print(solucao)
+
+    #print(solucao, '\n', len(solucao))
 
 
 if __name__ == '__main__':
