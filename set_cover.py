@@ -1,4 +1,6 @@
 import numpy as np
+
+
 # Função que converte a lista contendo as restrições como 'string' para 'int' que está contida em uma lista de listas de Inteiros:
 def converterStringParaInt(listaStr):
     # Faço uma primeira iteração atribuída a cada restrição do problema:
@@ -17,58 +19,72 @@ def converterStringParaInt(listaStr):
 
 
 # Converte as restrições que antes estava em 0 e 1, para apenas os valores das posições do 1, para conseguirmos trabalhar na 2ª regra:
-def converterBinParaIntDosConjuntos(listaBin):
+def converterBinParaIntDosConjuntos(listaBin, tipo):
     listaConjuntos = []
-    tamanhoDasRestricoes = len(listaBin[0])
 
-    # Caso ele tenha apenas uma restrição em objetos, ele roda apenas uma vez e tira os valores dos conjuntos que contém em cada restrição:
-    if len(listaBin) == 1:
-        for j in range(tamanhoDasRestricoes):
-            if listaBin[0][j] == 1:
-                listaConjuntos.append(j)
-    else:
+    if tipo == 'linha':
         for i in range(len(listaBin)):
             listaAux = []
-            for j in range(tamanhoDasRestricoes):
-                if listaBin[j][i] == 1:
+            for j in range(len(listaBin[0])):
+                if listaBin[i][j]:
+                    listaAux.append(j)
+            listaConjuntos.append(listaAux)
+    
+    elif tipo == 'coluna':
+        for j in range(len(listaBin[0])):
+            listaAux = []
+            for i in range(len(listaBin)):
+                if listaBin[i][j]:
                     listaAux.append(i)
             listaConjuntos.append(listaAux)
     
-    listaConjuntos = np.array(listaConjuntos)
     return listaConjuntos
 
 
 # Função que faz a primeira regra pedida do problema:
 def regra1(restricao, solucao, modificacoes, listaSubconjOriginais):
-    aux = 0
+    aux, coluna = 0, 0
     indicesLinhas = []
+    solucaoColetada = set()
 
-    for i in range(len(restricao)):
-        cobertura = 0
-        for j in range(len(restricao[0])):
-            cobertura += restricao[i][j]
-            if restricao[i][j]:
-                aux = j
-        if cobertura == 1:
-            indicesLinhas.append(i)
-            solucao.add(aux)
-            modificacoes = True
-
-    indiceSolucao = list(solucao)
-
-    for i in range(len(restricao)):
-        for j in indiceSolucao:
-            if restricao[i][j] and i not in indicesLinhas:
+    # Corrigir depois caso tenha apenas 1 elemento, tipo: [[1]]
+    if restricao.shape == (1,):
+        solucao.add(int(listaSubconjOriginais))
+        restricao = []
+        modificacoes = True
+        
+    else:
+        for i in range(len(restricao)):
+            cobertura = 0
+            for j in range(len(restricao[0])):
+                cobertura += restricao[i][j]
+                if restricao[i][j]:
+                    coluna = j
+            if cobertura == 1:
+                for k in range(len(listaSubconjOriginais[0])):
+                    if restricao[i][k]:
+                        aux = listaSubconjOriginais[0][k]
+                solucaoColetada.add(coluna)
                 indicesLinhas.append(i)
-    
-    restricaoNova = np.delete(restricao, indicesLinhas, axis=0)
-    listaSubconjOriginaisNovo = np.delete(listaSubconjOriginais, indicesLinhas, axis=0)
+                solucao.add(aux)
+                modificacoes = True
 
-    return restricaoNova, solucao, modificacoes, listaSubconjOriginaisNovo
+
+        indiceSolucao = list(solucaoColetada)
+
+
+        for i in range(len(restricao)):
+            for j in indiceSolucao:
+                if restricao[i][j] and i not in indicesLinhas:
+                    indicesLinhas.append(i)
+
+        restricao = np.delete(restricao, indicesLinhas, axis=0)
+        listaSubconjOriginais = np.delete(listaSubconjOriginais, indicesLinhas, axis=0)
+
+    return restricao, solucao, modificacoes, listaSubconjOriginais
         
 
-
-def regra2(conjuntos, restricao, modificacoes):
+def regra2(conjuntos, restricao, modificacoes, listaSubconjOriginais):
     listaAux = []
     
     # Por convenção decidi criar um laço duplo para salvar os elementos dos subconjuntos das restrições redundantes do problema em uma lista 'l'
@@ -79,47 +95,44 @@ def regra2(conjuntos, restricao, modificacoes):
             if set1 >= set2:
                 if m not in listaAux:
                     listaAux.append(m)
+                    modificacoes = True
             elif set1 < set2:
-                # Não sei como ficaria esse 'if' caso ouvesse um caso de 3 restrições serem identicas tipo [0,1,1,0,0,0,0] aparecer 3 vezes (?)
                 if n not in listaAux:
                     listaAux.append(n)
+                    modificacoes = True
+        
+    restricao = np.delete(restricao, listaAux, axis=0)
+    listaSubconjOriginais = np.delete(listaSubconjOriginais, listaAux, axis=0)
+
+    return restricao, modificacoes, listaSubconjOriginais
+ 
+
+def regra3(conjuntos, restricao, modificacoes, listaSubconjOriginais):
+    listaAux = []
     
- 
-    # Agora farei um laço duplo para pegar os elementos salvos da lista 'l' e compará-los com a 'lista' de entrada que é a lista de conjuntos (Xi) em cada restrição, para deletarmos depois:
-    # Por preguiça e falta de ideia, criei uma lista anteriormente 'aux1' para salvar a restrição que é repetido e possui seus idênticos no problema para fazer sua inclusão novamente nos objetos
-    # listaAux.sort()
-    # aux = 0
-    # for k in listaAux:
-    #     del restricao[k - aux]
-    #     aux += 1
-    #     modificacoes = True
-    restricaoModificada = np.delete(restricao, listaAux, axis=0)
-
-    return restricaoModificada, modificacoes
- 
-
-
-# def regra3(restricoes, solucao, modificado, listaSubconjRemovidos):
-#     maiorPrioridade, indiceConjunto, prioridade = 0, 0, 0
-
-#     for j in range(len(restricoes)):
-#         if len(restricoes) == 1:
-#             if restricoes[0][j]:
-#                 indiceConjunto = j
-#                 solucao.add(j)
-#                 return restricoes
+    # Por convenção decidi criar um laço duplo para salvar os elementos dos subconjuntos das restrições redundantes do problema em uma lista 'l'
+    for m in range(len(conjuntos)):
+        set1 = set(conjuntos[m])
+        for n in range(m + 1, len(conjuntos)):
+            set2 = set(conjuntos[n])
+            if set1 <= set2:
+                if m not in listaAux and set1 is not {}:
+                    listaAux.append(m)
+                    modificacoes = True
+            elif set1 > set2:
+                if n not in listaAux and set2 is not None:
+                    listaAux.append(n)
+                    modificacoes = True
         
-#         else:
-#             for i in range(len(restricoes)):
-#                 if restricoes[i][j]:
-#                     prioridade += restricoes[i][j]
-            
-#             if prioridade > maiorPrioridade:
-#                 maiorPrioridade = prioridade
-#                 indiceConjunto = j
-#             prioridade = 0
-        
-#     return indiceConjunto
+    if len(restricao) == 1:
+        restricao = np.delete(restricao, listaAux)
+        listaSubconjOriginais = np.delete(listaSubconjOriginais, listaAux)
+
+    else:
+        restricao = np.delete(restricao, listaAux, axis=1)
+        listaSubconjOriginais = np.delete(listaSubconjOriginais, listaAux, axis=1)
+
+    return restricao, modificacoes, listaSubconjOriginais
         
 
 
@@ -130,31 +143,32 @@ def main():
     lista = conjunto.split('\n')
     restricoes = converterStringParaInt(lista)
     restricoesArray = np.array(restricoes)
+    del lista, conjunto
 
-    listaSubconjOriginais = restricoesArray
+    #listaSubconjOriginais, _ = np.meshgrid(np.arange(len(restricoesArray[0])), np.arange(len(restricoesArray)))
+    listaSubconjOriginais, _ = np.meshgrid(np.arange(len(restricoesArray[0])), np.arange(len(restricoesArray)))
     solucao = set()
-    modificacoes = True
-
-    linhas = len(restricoes)
+    modificacoes = bool
     
     while modificacoes:
         modificacoes = False
         resultado_regra1 = []
-            
-        resultado_regra1 = regra1(restricoes, solucao, modificacoes, listaSubconjOriginais)
-        restricoes, solucao, modificacoes, listaSubconjOriginais = resultado_regra1[0], resultado_regra1[1], resultado_regra1[2], resultado_regra1[3]
+        if len(restricoesArray) != 0:
+            resultado_regra1 = regra1(restricoesArray, solucao, modificacoes, listaSubconjOriginais)
+            restricoesArray, solucao, modificacoes, listaSubconjOriginais = resultado_regra1[0], resultado_regra1[1], resultado_regra1[2], resultado_regra1[3]
 
-        # Aqui coloquei um segundo argumento de 'restricoes' para eu conseguir deletar as restricoes que possuem conjuntos redundantes, sobrando apenas seus subconjuntos:
-        if len(restricoes) != 1:
-            resultado_regra2 = regra2(converterBinParaIntDosConjuntos(restricoes), restricoes, modificacoes)
-            restricoes, modificacoes = resultado_regra2[0], resultado_regra2[1]
-            #print(restricoes, modificacoes)
         
-        modificacoes = False
-        #resultado_regra3 = regra3(restricoes, modificado, colunas)
+        # Aqui coloquei um segundo argumento de 'restricoes' para eu conseguir deletar as restricoes que possuem conjuntos redundantes, sobrando apenas seus subconjuntos:
+        if len(restricoesArray) != 1 and len(restricoesArray) != 0:
+            resultado_regra2 = regra2(converterBinParaIntDosConjuntos(restricoesArray, 'linha'), restricoesArray, modificacoes, listaSubconjOriginais)
+            restricoesArray, modificacoes, listaSubconjOriginais = resultado_regra2[0], resultado_regra2[1], resultado_regra2[2]
+        
+        if len(restricoesArray) != 0:
+            resultado_regra3 = regra3(converterBinParaIntDosConjuntos(restricoesArray, 'coluna'), restricoesArray, modificacoes, listaSubconjOriginais)
+            restricoesArray, modificacoes, listaSubconjOriginais = resultado_regra3[0], resultado_regra3[1], resultado_regra3[2]
 
 
-    #print(solucao, '\n', len(solucao))
+    print(solucao, '\n', len(solucao), '\n', len(restricoesArray[0]), len(restricoesArray))
 
 
 if __name__ == '__main__':
