@@ -1,11 +1,11 @@
 # Gerador de instancia de minimum set cover.
 import random as rd
 
-N = 30 # Numero de objetos
-M = 70 # Numero de subconjuntos
+N = 7 # Numero de objetos
+M = 12 # Numero de subconjuntos
 
 # Semente para o gerador pseudoaleatorio (default: 682)
-rd.seed(123)
+rd.seed(16)
 
 F = []
 while True:
